@@ -48,31 +48,40 @@ end
 ---@return snacks.terminal.Opts opts Snacks terminal options with start_insert/auto_insert controlled by focus parameter
 local function build_opts(config, env_table, focus)
   focus = utils.normalize_focus(focus)
+  local win_config = {
+    position = config.split_side,
+    relative = "editor",
+    keys = {
+      claude_new_line = {
+        "<S-CR>",
+        function()
+          vim.api.nvim_feedkeys("\\", "t", true)
+          vim.defer_fn(function()
+            vim.api.nvim_feedkeys("\r", "t", true)
+          end, 10)
+        end,
+        mode = "t",
+        desc = "New line",
+      },
+    },
+  }
+
+  -- Set width or height based on split side
+  if config.split_side == "bottom" then
+    win_config.height = config.split_height_percentage
+    win_config.width = 0
+  else
+    win_config.width = config.split_width_percentage
+    win_config.height = 0
+  end
+
   return {
     env = env_table,
     cwd = config.cwd,
     start_insert = focus,
     auto_insert = focus,
     auto_close = false,
-    win = vim.tbl_deep_extend("force", {
-      position = config.split_side,
-      width = config.split_width_percentage,
-      height = 0,
-      relative = "editor",
-      keys = {
-        claude_new_line = {
-          "<S-CR>",
-          function()
-            vim.api.nvim_feedkeys("\\", "t", true)
-            vim.defer_fn(function()
-              vim.api.nvim_feedkeys("\r", "t", true)
-            end, 10)
-          end,
-          mode = "t",
-          desc = "New line",
-        },
-      },
-    } --[[@as snacks.win.Config]], config.snacks_win_opts or {}),
+    win = vim.tbl_deep_extend("force", win_config --[[@as snacks.win.Config]], config.snacks_win_opts or {}),
   } --[[@as snacks.terminal.Opts]]
 end
 

@@ -10,6 +10,7 @@ local claudecode_server_module = require("claudecode.server.init")
 local defaults = {
   split_side = "right",
   split_width_percentage = 0.30,
+  split_height_percentage = 0.30,
   provider = "auto",
   show_native_term_exit_tip = true,
   terminal_cmd = nil,
@@ -201,9 +202,12 @@ local function build_config(opts_override)
   if type(opts_override) == "table" then
     local validators = {
       split_side = function(val)
-        return val == "left" or val == "right"
+        return val == "left" or val == "right" or val == "bottom"
       end,
       split_width_percentage = function(val)
+        return type(val) == "number" and val > 0 and val < 1
+      end,
+      split_height_percentage = function(val)
         return type(val) == "number" and val > 0 and val < 1
       end,
       snacks_win_opts = function(val)
@@ -267,6 +271,7 @@ local function build_config(opts_override)
   return {
     split_side = effective_config.split_side,
     split_width_percentage = effective_config.split_width_percentage,
+    split_height_percentage = effective_config.split_height_percentage,
     auto_close = effective_config.auto_close,
     snacks_win_opts = effective_config.snacks_win_opts,
     cwd = resolved_cwd,
@@ -387,7 +392,7 @@ function M.setup(user_term_config, p_terminal_cmd, p_env)
 
   for k, v in pairs(user_term_config) do
     if k == "split_side" then
-      if v == "left" or v == "right" then
+      if v == "left" or v == "right" or v == "bottom" then
         defaults.split_side = v
       else
         vim.notify("claudecode.terminal.setup: Invalid value for split_side: " .. tostring(v), vim.log.levels.WARN)
@@ -398,6 +403,15 @@ function M.setup(user_term_config, p_terminal_cmd, p_env)
       else
         vim.notify(
           "claudecode.terminal.setup: Invalid value for split_width_percentage: " .. tostring(v),
+          vim.log.levels.WARN
+        )
+      end
+    elseif k == "split_height_percentage" then
+      if type(v) == "number" and v > 0 and v < 1 then
+        defaults.split_height_percentage = v
+      else
+        vim.notify(
+          "claudecode.terminal.setup: Invalid value for split_height_percentage: " .. tostring(v),
           vim.log.levels.WARN
         )
       end
